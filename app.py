@@ -3,12 +3,16 @@ import yt_dlp
 import os
 import subprocess
 import cv2
+import imageio_ffmpeg  # Automatically handles FFmpeg internally!
 
 # ================= APP CONFIGURATION =================
 st.set_page_config(page_title="Pro Downloader AI", page_icon="👑", layout="wide")
 
-# FFMPEG is pre-installed on Streamlit Cloud via packages.txt
-FFMPEG_LOC = "ffmpeg"
+# AUTOMATIC INTERNAL FFMPEG PATH DETECTION
+try:
+    FFMPEG_LOC = imageio_ffmpeg.get_ffmpeg_exe()
+except:
+    FFMPEG_LOC = "ffmpeg"
 
 def time_to_sec(t_str):
     try:
@@ -81,7 +85,7 @@ if st.button("🚀 START PROCESS", use_container_width=True, type="primary"):
 
         media_type = 'Audio' if 'Audio' in preset else 'Video'
         
-        # Base yt-dlp options
+        # Base yt-dlp options using internal FFMPEG
         ydl_opts = {
             'ffmpeg_location': FFMPEG_LOC,
             'quiet': True,
@@ -130,7 +134,7 @@ if st.button("🚀 START PROCESS", use_container_width=True, type="primary"):
                     meta_cmd = ["-map_metadata", "-1"] if clean_meta else []
                     ffmpeg_cmd = [FFMPEG_LOC, "-i", downloaded_file, "-c:v", "copy", "-c:a", "copy", "-y"] + meta_cmd + [final_file]
                     subprocess.run(ffmpeg_cmd, check=True)
-                    update_log(f"✅ Optimization & Metadata rules applied.")
+                    update_log(f"✅ Internal Optimization Applied.")
                 else:
                     os.rename(downloaded_file, final_file)
 
