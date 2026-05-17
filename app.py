@@ -44,12 +44,12 @@ with st.expander("⚙️ Advanced Settings"):
 # URL Input Field
 url_input = st.text_input("Paste URL here (Auto Preview)...", placeholder="https://...")
 
-# --- AUTO PREVIEW ENGINE WITH ANTI-BOCKING ---
+# --- AUTO PREVIEW ENGINE ---
 if url_input and "http" in url_input:
     try:
-        # Bypassing YouTube blocking for preview extraction
         preview_opts = {
             'quiet': True,
+            'cookiefile': 'cookies.txt',  # Using cookies for preview as well
             'extractor_args': {'youtube': {'player_client': ['android', 'web']}}
         }
         with yt_dlp.YoutubeDL(preview_opts) as ydl:
@@ -101,11 +101,12 @@ if video_click or audio_click:
                 try: os.remove(f)
                 except: pass
 
-        # Config setup with ANTI-403 FORBIDDEN ARGS
+        # Config setup with COOKIEFILE and ANTI-BLOCKING
         ydl_opts = {
             'ffmpeg_location': FFMPEG_PATH,
             'quiet': True,
             'outtmpl': 'downloaded_raw.%(ext)s',
+            'cookiefile': 'cookies.txt',  # Safely using your uploaded cookies
             'extractor_args': {
                 'youtube': {
                     'player_client': ['android', 'ios', 'web'],
