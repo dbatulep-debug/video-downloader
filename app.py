@@ -49,7 +49,7 @@ if url_input and "http" in url_input:
     try:
         preview_opts = {
             'quiet': True,
-            'cookiefile': 'cookies.txt',  # Using cookies for preview as well
+            'cookiefile': 'cookies.txt',
             'extractor_args': {'youtube': {'player_client': ['android', 'web']}}
         }
         with yt_dlp.YoutubeDL(preview_opts) as ydl:
@@ -101,12 +101,12 @@ if video_click or audio_click:
                 try: os.remove(f)
                 except: pass
 
-        # Config setup with COOKIEFILE and ANTI-BLOCKING
+        # SMART FLEXIBLE FORMAT SELECTION ENGINE
         ydl_opts = {
             'ffmpeg_location': FFMPEG_PATH,
             'quiet': True,
             'outtmpl': 'downloaded_raw.%(ext)s',
-            'cookiefile': 'cookies.txt',  # Safely using your uploaded cookies
+            'cookiefile': 'cookies.txt',
             'extractor_args': {
                 'youtube': {
                     'player_client': ['android', 'ios', 'web'],
@@ -122,15 +122,16 @@ if video_click or audio_click:
                 'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
             })
         else:
-            quality_map = {
-                "720p": "bestvideo[height<=720]+bestaudio/best",
-                "1080p": "bestvideo[height<=1080]+bestaudio/best",
-                "4K": "bestvideo+bestaudio/best"
-            }
-            ydl_opts.update({
-                'format': quality_map[quality],
-                'merge_output_format': file_format,
-            })
+            # Flexible format matching your dynamic resolution engine
+            if quality == "720p":
+                ydl_opts['format'] = 'bestvideo[height<=720]+bestaudio/best'
+            elif quality == "1080p":
+                ydl_opts['format'] = 'bestvideo[height<=1080]+bestaudio/best'
+            else: # 4K
+                ydl_opts['format'] = 'bestvideo+bestaudio/best'
+            
+            # Let yt-dlp merge it natively first, then we process it cleanly
+            ydl_opts['merge_output_format'] = 'mkv'
 
         # Clipper parameters logic
         if cb_clipper and start_t and end_t:
@@ -141,7 +142,7 @@ if video_click or audio_click:
                 status.info(f"✂️ Clipping from {s_time}s to {e_time}s...")
 
         try:
-            status.warning("⏳ Downloading Best Quality from Source Server...")
+            status.warning("⏳ Fetching Streams and Downloading from Server...")
             progress.progress(25)
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -159,12 +160,20 @@ if video_click or audio_click:
                 with open(final_file, "rb") as f:
                     st.download_button("⬇️ Save MP3 to Device", data=f, file_name=final_file, mime="audio/mpeg")
             else:
-                status.warning("🛠️ Optimizing Video Layout...")
-                raw_file = f"downloaded_raw.{file_format}"
-                final_output = f"Final_{title_clean}.{file_format}"
+                status.warning("🛠️ Processing and Converting to Target Format...")
                 
+                # Check what format yt-dlp generated natively
+                raw_file = "downloaded_raw.mkv"
+                if not os.path.exists(raw_file):
+                    if os.path.exists("downloaded_raw.mp4"):
+                        raw_file = "downloaded_raw.mp4"
+                    elif os.path.exists("downloaded_raw.webm"):
+                        raw_file = "downloaded_raw.webm"
+                
+                final_output = f"Final_{title_clean}.{file_format}"
                 meta_cmd = ["-map_metadata", "-1"] if cb_meta else []
                 
+                # Dynamic re-encoding to ensure perfect standard mp4/mkv compatibility
                 cmd = [FFMPEG_PATH, "-i", raw_file, "-c:v", "libx264", "-crf", "18", 
                        "-preset", "fast", "-c:a", "aac", "-b:a", "320k", "-y"] + meta_cmd + [final_output]
                 subprocess.run(cmd, check=True)
