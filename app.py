@@ -3,7 +3,7 @@ import yt_dlp
 import os
 import subprocess
 import requests
-import imageio_ffmpeg  # Internal FFmpeg loader to completely bypass server errors!
+import imageio_ffmpeg  # Internal FFmpeg loader
 
 # ================= APP CONFIGURATION =================
 st.set_page_config(page_title="YT Downloader Pro", page_icon="⚡", layout="centered")
@@ -28,10 +28,7 @@ def time_to_sec(t_str):
 st.title("⚡ YT Downloader Pro (Web Edition)")
 st.write("---")
 
-# Top Bar: Settings and Auto-Paste Message
-top_col1, top_col2 = st.columns([3, 1])
-with top_col1:
-    st.caption("📋 Ready to paste video link below")
+st.caption("📋 Ready to paste video link below")
 
 with st.expander("⚙️ Advanced Settings"):
     cb_clipper = st.checkbox("✂️ Enable Smart Clipper (Time Stamps)")
@@ -47,10 +44,15 @@ with st.expander("⚙️ Advanced Settings"):
 # URL Input Field
 url_input = st.text_input("Paste URL here (Auto Preview)...", placeholder="https://...")
 
-# --- AUTO PREVIEW ENGINE ---
+# --- AUTO PREVIEW ENGINE WITH ANTI-BOCKING ---
 if url_input and "http" in url_input:
     try:
-        with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+        # Bypassing YouTube blocking for preview extraction
+        preview_opts = {
+            'quiet': True,
+            'extractor_args': {'youtube': {'player_client': ['android', 'web']}}
+        }
+        with yt_dlp.YoutubeDL(preview_opts) as ydl:
             info = ydl.extract_info(url_input, download=False)
             title = info.get("title", "Unknown Title")
             thumb_url = info.get("thumbnail", "")
@@ -61,7 +63,7 @@ if url_input and "http" in url_input:
     except:
         st.caption("🔍 Loading preview... You can proceed to process.")
 
-# Selectors matching your Desktop App Layout
+# Quality and Format Selectors
 h_col1, h_col2 = st.columns(2)
 with h_col1:
     quality = st.selectbox("Select Quality:", ["1080p", "720p", "4K"])
@@ -99,11 +101,17 @@ if video_click or audio_click:
                 try: os.remove(f)
                 except: pass
 
-        # Config setup matching your engine layout
+        # Config setup with ANTI-403 FORBIDDEN ARGS
         ydl_opts = {
             'ffmpeg_location': FFMPEG_PATH,
             'quiet': True,
-            'outtmpl': 'downloaded_raw.%(ext)s'
+            'outtmpl': 'downloaded_raw.%(ext)s',
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'ios', 'web'],
+                    'skip': ['dash', 'hls']
+                }
+            }
         }
 
         if is_mp3:
